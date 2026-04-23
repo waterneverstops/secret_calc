@@ -1,0 +1,12 @@
+{
+    "name": "Calc",
+    "short_name": "Calc",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0F0F1A",
+    "theme_color": "#6C63FF",
+    "description": "A calculator. Or is it?",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": []
+}
