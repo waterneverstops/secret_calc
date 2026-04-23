@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter --version)",
+      "Bash(where flutter *)",
+      "Read(//c/Users/**)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(winget install *)",
+      "PowerShell(winget search *)",
+      "PowerShell(choco *)",
+      "Bash(git stash *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(git rm *)",
+      "Bash(cp -r /tmp/cat_web_build/. .)",
+      "Bash(rm -rf build .dart_tool pubspec.lock lib web .gitignore pubspec.yaml)",
+      "Bash(cp -r /tmp/new_web_build/. .)",
+      "Bash(rm -rf build .dart_tool pubspec.lock lib web .gitignore pubspec.yaml .claude)"
+    ]
+  }
+}
