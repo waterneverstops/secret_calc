@@ -1,1 +1,0 @@
- C:\\work\\vibe\\calc\\build\\web\\manifest.json:  C:\\work\\vibe\\calc\\web\\index.html C:\\work\\vibe\\calc\\web\\manifest.json
