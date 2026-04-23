@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({super.key});
@@ -200,6 +201,86 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     });
   }
 
+  KeyEventResult _handleKeyEvent(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final key = event.logicalKey;
+
+    if (_secretUnlocked) {
+      _dismissSecret();
+      return KeyEventResult.handled;
+    }
+
+    final digitKeys = {
+      LogicalKeyboardKey.digit0: '0', LogicalKeyboardKey.digit1: '1',
+      LogicalKeyboardKey.digit2: '2', LogicalKeyboardKey.digit3: '3',
+      LogicalKeyboardKey.digit4: '4', LogicalKeyboardKey.digit5: '5',
+      LogicalKeyboardKey.digit6: '6', LogicalKeyboardKey.digit7: '7',
+      LogicalKeyboardKey.digit8: '8', LogicalKeyboardKey.digit9: '9',
+      LogicalKeyboardKey.numpad0: '0', LogicalKeyboardKey.numpad1: '1',
+      LogicalKeyboardKey.numpad2: '2', LogicalKeyboardKey.numpad3: '3',
+      LogicalKeyboardKey.numpad4: '4', LogicalKeyboardKey.numpad5: '5',
+      LogicalKeyboardKey.numpad6: '6', LogicalKeyboardKey.numpad7: '7',
+      LogicalKeyboardKey.numpad8: '8', LogicalKeyboardKey.numpad9: '9',
+    };
+
+    if (digitKeys.containsKey(key)) {
+      setState(() => _inputDigit(digitKeys[key]!));
+      return KeyEventResult.handled;
+    }
+
+    final opKeys = {
+      LogicalKeyboardKey.add:          '+',
+      LogicalKeyboardKey.numpadAdd:    '+',
+      LogicalKeyboardKey.minus:        '−',
+      LogicalKeyboardKey.numpadSubtract: '−',
+      LogicalKeyboardKey.asterisk:     '×',
+      LogicalKeyboardKey.numpadMultiply: '×',
+      LogicalKeyboardKey.slash:        '÷',
+      LogicalKeyboardKey.numpadDivide: '÷',
+    };
+
+    if (opKeys.containsKey(key)) {
+      setState(() => _setOperator(opKeys[key]!));
+      return KeyEventResult.handled;
+    }
+
+    if (key == LogicalKeyboardKey.equal ||
+        key == LogicalKeyboardKey.numpadEqual ||
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter) {
+      setState(_calculate);
+      return KeyEventResult.handled;
+    }
+
+    if (key == LogicalKeyboardKey.backspace) {
+      setState(_backspace);
+      return KeyEventResult.handled;
+    }
+
+    if (key == LogicalKeyboardKey.escape ||
+        key == LogicalKeyboardKey.delete) {
+      setState(_clear);
+      return KeyEventResult.handled;
+    }
+
+    if (key == LogicalKeyboardKey.period ||
+        key == LogicalKeyboardKey.numpadDecimal ||
+        key == LogicalKeyboardKey.comma) {
+      setState(() => _inputDigit('.'));
+      return KeyEventResult.handled;
+    }
+
+    if (key == LogicalKeyboardKey.percent) {
+      setState(_percent);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
   // ── palette ──────────────────────────────────────────────────────────────────
 
   static const _bg = Color(0xFF0F0F1A);
@@ -213,21 +294,44 @@ class _CalculatorScreenState extends State<CalculatorScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                _buildDisplay(),
-                const SizedBox(height: 8),
-                Expanded(child: _buildButtons()),
-                _buildFooter(),
-              ],
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF07070F),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 720),
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _bg,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.6),
+                          blurRadius: 48,
+                          offset: const Offset(0, 16),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        _buildDisplay(),
+                        const SizedBox(height: 8),
+                        Expanded(child: _buildButtons()),
+                        _buildFooter(),
+                      ],
+                    ),
+                  ),
+                  if (_secretUnlocked) _buildSecretOverlay(),
+                ],
+              ),
             ),
-            if (_secretUnlocked) _buildSecretOverlay(),
-          ],
+          ),
         ),
       ),
     );
@@ -358,7 +462,10 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       child: GestureDetector(
         onTap: _dismissSecret,
         child: Container(
-          color: const Color(0xF0120C0A),
+          decoration: BoxDecoration(
+            color: const Color(0xF0120C0A),
+            borderRadius: BorderRadius.circular(24),
+          ),
           alignment: Alignment.center,
           child: _CatSecretContent(breathAnimation: _breathAnimation),
         ),
