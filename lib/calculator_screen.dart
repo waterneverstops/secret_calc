@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 class CalculatorScreen extends StatefulWidget {
@@ -17,33 +16,33 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   bool _waitingForOperand = false;
   bool _justCalculated = false;
 
-  // Secret tracking — checks if result was 1337
   bool _secretUnlocked = false;
   late AnimationController _secretController;
-  late AnimationController _glowController;
+  late AnimationController _breathController;
   late Animation<double> _secretOpacity;
-  late Animation<double> _glowAnimation;
+  late Animation<double> _breathAnimation;
 
-  static const _secretNumber = 1337.0;
+  // 9 lives
+  static const _secretNumber = 9.0;
 
   @override
   void initState() {
     super.initState();
     _secretController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _glowController = AnimationController(
-      duration: const Duration(seconds: 2),
+    _breathController = AnimationController(
+      duration: const Duration(milliseconds: 3200),
       vsync: this,
     )..repeat(reverse: true);
 
     _secretOpacity = CurvedAnimation(
       parent: _secretController,
-      curve: Curves.easeIn,
+      curve: Curves.easeInOut,
     );
-    _glowAnimation = CurvedAnimation(
-      parent: _glowController,
+    _breathAnimation = CurvedAnimation(
+      parent: _breathController,
       curve: Curves.easeInOut,
     );
   }
@@ -51,7 +50,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   @override
   void dispose() {
     _secretController.dispose();
-    _glowController.dispose();
+    _breathController.dispose();
     super.dispose();
   }
 
@@ -201,7 +200,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     });
   }
 
-  // ── UI ──────────────────────────────────────────────────────────────────────
+  // ── palette ──────────────────────────────────────────────────────────────────
 
   static const _bg = Color(0xFF0F0F1A);
   static const _displayBg = Color(0xFF16162A);
@@ -209,6 +208,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   static const _btnMid = Color(0xFF2A2A45);
   static const _btnAccent = Color(0xFF6C63FF);
   static const _btnOp = Color(0xFF3D3A6B);
+
+  // ── build ─────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +234,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   Widget _buildDisplay() {
+    final showEars = _display == '0' && _expression.isEmpty && !_justCalculated;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -252,19 +255,26 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           else
             const SizedBox(height: 22),
           const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
+          Stack(
             alignment: Alignment.centerRight,
-            child: Text(
-              _display,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 64,
-                fontWeight: FontWeight.w300,
-                letterSpacing: -2,
-                fontFeatures: [FontFeature.tabularFigures()],
+            clipBehavior: Clip.none,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  _display,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 64,
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: -2,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
               ),
-            ),
+              if (showEars) _CatEars(breathAnimation: _breathAnimation),
+            ],
           ),
         ],
       ),
@@ -295,7 +305,6 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                       color: _buttonColor(label),
                       textColor: _buttonTextColor(label),
                       onTap: () => _onButton(label),
-                      glowAnimation: label == '=' ? _glowAnimation : null,
                     ),
                   ),
                 );
@@ -327,15 +336,15 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, top: 2),
       child: AnimatedBuilder(
-        animation: _glowAnimation,
+        animation: _breathAnimation,
         builder: (_, __) {
-          final opacity = 0.25 + _glowAnimation.value * 0.35;
+          final opacity = 0.18 + _breathAnimation.value * 0.18;
           return Text(
-            'v1.3.3.7  ·  not all numbers are equal',
+            'v1.0  ·  lives: ?',
             style: TextStyle(
               color: Colors.white.withOpacity(opacity),
               fontSize: 11,
-              letterSpacing: 1.2,
+              letterSpacing: 1.5,
             ),
           );
         },
@@ -349,92 +358,141 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       child: GestureDetector(
         onTap: _dismissSecret,
         child: Container(
-          color: Colors.black.withOpacity(0.92),
+          color: const Color(0xF0120C0A),
           alignment: Alignment.center,
-          child: _SecretContent(glowAnimation: _glowAnimation),
+          child: _CatSecretContent(breathAnimation: _breathAnimation),
         ),
       ),
     );
   }
 }
 
-// ── Secret overlay content ───────────────────────────────────────────────────
+// ── Cat ears drawn on top of the zero ────────────────────────────────────────
 
-class _SecretContent extends StatelessWidget {
-  const _SecretContent({required this.glowAnimation});
-  final Animation<double> glowAnimation;
+class _CatEars extends StatelessWidget {
+  const _CatEars({required this.breathAnimation});
+  final Animation<double> breathAnimation;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: glowAnimation,
+      animation: breathAnimation,
       builder: (_, __) {
-        final glow = glowAnimation.value;
+        final opacity = 0.04 + breathAnimation.value * 0.04;
+        return Positioned(
+          right: 18,
+          top: -18,
+          child: Opacity(
+            opacity: opacity,
+            child: CustomPaint(
+              size: const Size(48, 20),
+              painter: _EarsPainter(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _EarsPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    // left ear triangle
+    final leftEar = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(size.width * 0.22, 0)
+      ..lineTo(size.width * 0.44, size.height)
+      ..close();
+
+    // right ear triangle
+    final rightEar = Path()
+      ..moveTo(size.width * 0.56, size.height)
+      ..lineTo(size.width * 0.78, 0)
+      ..lineTo(size.width, size.height)
+      ..close();
+
+    canvas.drawPath(leftEar, paint);
+    canvas.drawPath(rightEar, paint);
+  }
+
+  @override
+  bool shouldRepaint(_EarsPainter oldDelegate) => false;
+}
+
+// ── Secret overlay ────────────────────────────────────────────────────────────
+
+class _CatSecretContent extends StatelessWidget {
+  const _CatSecretContent({required this.breathAnimation});
+  final Animation<double> breathAnimation;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: breathAnimation,
+      builder: (_, __) {
+        final t = breathAnimation.value;
+        final warmColor = Color.lerp(
+          const Color(0xFFD4956A),
+          const Color(0xFFE8C49A),
+          t,
+        )!;
+
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                colors: [
-                  const Color(0xFF6C63FF),
-                  Color.lerp(
-                    const Color(0xFFFF63C3),
-                    const Color(0xFF63FFEE),
-                    glow,
-                  )!,
-                ],
-              ).createShader(bounds),
-              child: const Text(
-                '1337',
-                style: TextStyle(
-                  fontSize: 96,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -4,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+            // cat face
             Text(
-              'Y0U F0UND 1T',
+              '=^ . ^=',
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white.withOpacity(0.95),
-                letterSpacing: 6,
+                fontSize: 52,
+                color: warmColor,
+                letterSpacing: 4,
+                fontWeight: FontWeight.w300,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
+            Text(
+              'meow',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.w200,
+                color: Colors.white.withOpacity(0.9),
+                letterSpacing: 12,
+              ),
+            ),
+            const SizedBox(height: 20),
             Container(
-              width: 260,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              width: 240,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Color.lerp(
-                    const Color(0xFF6C63FF),
-                    const Color(0xFFFF63C3),
-                    glow,
-                  )!.withOpacity(0.6),
+                  color: warmColor.withOpacity(0.3),
+                  width: 1,
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                '"1337" — leet speak.\nThe language of those who look deeper.',
+              child: Text(
+                'cats have nine lives.\nyou found the one hidden here.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Color(0xFFBBBBCC),
-                  fontSize: 14,
-                  height: 1.6,
+                  color: Colors.white.withOpacity(0.55),
+                  fontSize: 13,
+                  height: 1.7,
                   letterSpacing: 0.3,
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 36),
             Text(
-              'tap anywhere to continue',
+              'tap to close',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.3),
-                fontSize: 12,
+                color: Colors.white.withOpacity(0.2),
+                fontSize: 11,
                 letterSpacing: 2,
               ),
             ),
@@ -445,7 +503,7 @@ class _SecretContent extends StatelessWidget {
   }
 }
 
-// ── Button widget ────────────────────────────────────────────────────────────
+// ── Button ─────────────────────────────────────────────────────────────────────
 
 class _CalcButton extends StatefulWidget {
   const _CalcButton({
@@ -453,14 +511,12 @@ class _CalcButton extends StatefulWidget {
     required this.color,
     required this.textColor,
     required this.onTap,
-    this.glowAnimation,
   });
 
   final String label;
   final Color color;
   final Color textColor;
   final VoidCallback onTap;
-  final Animation<double>? glowAnimation;
 
   @override
   State<_CalcButton> createState() => _CalcButtonState();
@@ -471,9 +527,7 @@ class _CalcButtonState extends State<_CalcButton> {
 
   @override
   Widget build(BuildContext context) {
-    final isEquals = widget.label == '=';
-
-    Widget btn = GestureDetector(
+    return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
         setState(() => _pressed = false);
@@ -483,15 +537,13 @@ class _CalcButtonState extends State<_CalcButton> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
         decoration: BoxDecoration(
-          color: _pressed
-              ? widget.color.withOpacity(0.7)
-              : widget.color,
+          color: _pressed ? widget.color.withOpacity(0.65) : widget.color,
           borderRadius: BorderRadius.circular(16),
           boxShadow: _pressed
               ? []
               : [
                   BoxShadow(
-                    color: widget.color.withOpacity(0.25),
+                    color: widget.color.withOpacity(0.22),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -508,30 +560,5 @@ class _CalcButtonState extends State<_CalcButton> {
         ),
       ),
     );
-
-    if (isEquals && widget.glowAnimation != null) {
-      return AnimatedBuilder(
-        animation: widget.glowAnimation!,
-        builder: (_, child) {
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6C63FF)
-                      .withOpacity(0.15 + widget.glowAnimation!.value * 0.25),
-                  blurRadius: 16 + widget.glowAnimation!.value * 10,
-                  spreadRadius: widget.glowAnimation!.value * 2,
-                ),
-              ],
-            ),
-            child: child,
-          );
-        },
-        child: btn,
-      );
-    }
-
-    return btn;
   }
 }
